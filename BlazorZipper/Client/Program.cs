@@ -1,4 +1,5 @@
 using BlazorZipper;
+using BlazorZipper.Services;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 
@@ -13,6 +14,7 @@ namespace BlazorZipper
             builder.RootComponents.Add<HeadOutlet>("head::after");
 
             builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
+            builder.Services.AddScoped<IArchiveService, ArchiveService>();
 
             await builder.Build().RunAsync();
         }

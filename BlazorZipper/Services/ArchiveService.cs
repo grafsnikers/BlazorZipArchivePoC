@@ -1,13 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO.Compression;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.IO.Compression;
 
 namespace BlazorZipper.Services;
 
-public class ArchiveService
+public class ArchiveService : IArchiveService
 {
     private readonly HttpClient _httpClient;
 
@@ -16,7 +11,7 @@ public class ArchiveService
         _httpClient = httpClient;
     }
 
-    public async Task<byte[]> CreateArchive(IEnumerable<string> urls)
+    public async Task<byte[]> CreateArchiveAsync(IEnumerable<string> urls)
     {
         byte[] archiveBytes;
 
