@@ -23,7 +23,7 @@ jobs:
       run: dotnet publish BlazorZipper/BlazorZipper.csproj -c Release --output release --nologo
       
     - name: Uploading files to gh-pages branch
-      uses: JamesIves/github-pages-deploy-action@4.1.4
+      uses: JamesIves/github-pages-deploy-action@4.4.1
       with:
         branch: gh-pages
         folder: release/wwwroot
