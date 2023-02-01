@@ -22,8 +22,19 @@ jobs:
     - name: Publish .NET Core Project
       run: dotnet publish BlazorZipper/BlazorZipper.csproj -c Release --output release --nologo
       
+    # меняем '/' на '/BlazorZipArchivePoC/'
+    - name: Change base-tag in index.html from / to BlazorZipArchivePoC
+      run: sed -i 's/<base href="\/" \/>/<base href="\/BlazorZipArchivePoC\/" \/>/g' release/wwwroot/index.html
+
+    # add .nojekyll file to tell GitHub pages to not treat this as a Jekyll project. (Allow files and folders starting with an underscore)
+    - name: Add .nojekyll file
+      run: touch release/wwwroot/.nojekyll
+
     - name: Uploading files to gh-pages branch
       uses: JamesIves/github-pages-deploy-action@v4.4.1
       with:
         branch: gh-pages
         folder: release/wwwroot
+        
+
+      
