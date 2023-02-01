@@ -1,0 +1,102 @@
+﻿@page "/"
+@using BlazorZipper.Services;
+@inject HttpClient HttpClient;
+@inject IJSRuntime JsRuntime;
+
+<PageTitle>Index</PageTitle>
+
+<h1>Hello, world!</h1>
+
+Welcome to your new app.
+<div>
+    <button class="btn btn-primary" @onclick="DownloadArchive" disabled="@_downloading">@(_downloading ? "Downloading" : "Download Archive")</button>
+</div>
+<div class="container py-1">
+    <div class="row">
+        <div class="col-lg-7 mx-auto">
+            <div class="card rounded-0 border-0 shadow">
+                <div class="card-body p-5">
+
+                    <!--  Bootstrap table-->
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                            <tr>
+                                <th scope="col">#</th>
+                                <th scope="col">Url</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ((string? url, int i) in _urls.Select((s,i) => (s,i)))
+                                {
+                                    <tr>
+                                        <th scope="row">@i</th>
+                                        <td><a href="@url">@url</a></td>
+                                    </tr>
+                                }
+                                <tr>
+                                    <th scope="row">@_urls.Count</th>
+                                    <td><input class="form-control rounded-0" type="text" @bind="_newUrlField" placeholder="url"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Add rows button-->
+                    <a class="btn btn-primary rounded-0 btn-block" @onclick="AddNewRow" >Add new row</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code
+{
+    private List<string> _urls = new List<string>()
+    {
+        "https://img1.goodfon.com/original/2880x1800/e/e6/zhivotnoe-kot-bolshie-glaza.jpg",
+        "https://img2.goodfon.com/original/1600x1200/f/f5/kot-koshka-obyatiya.jpg",
+        "https://d.newsweek.com/en/full/2056716/cat-stalking-rat.jpg",
+        "https://img5.goodfon.ru/original/1680x1050/0/f1/solnechnaia-sistema-vselennaia-galaktika-planety-zviozdy-3.jpg",
+        "https://img5.goodfon.ru/original/1680x1050/f/27/viacheslav-lozhkin-natsionalnyi-park-ziuratkul-cheliabinskai.jpg",
+        "https://img5.goodfon.ru/original/1680x1050/1/e2/e92-power-line-blue-trees.jpg",
+        "https://img5.goodfon.ru/original/1680x1050/4/10/david-mas-photographer-model-girl-brunette-brown-hair-long-h.jpg",
+    };
+
+    private string _newUrlField = "";
+
+    private bool _downloading = false;
+
+    private async Task DownloadArchive()
+    {
+        _downloading = true;
+
+        var service = new ArchiveService(HttpClient);
+
+        var archiveBytes = await service.CreateArchive(_urls);
+
+        // Save to file on client side
+        using var archiveStream = new MemoryStream(archiveBytes);
+        var filename = "Archive.zip";
+        using var streamRef = new DotNetStreamReference(stream: archiveStream);
+        await JsRuntime.InvokeVoidAsync("downloadFileFromStream", filename, streamRef);
+
+        _downloading = false;
+    }
+
+    private void AddNewRow()
+    {
+        if (string.IsNullOrWhiteSpace(_newUrlField))
+        {
+            Console.WriteLine("The url is empty");
+            return;
+        }
+        if (!Uri.IsWellFormedUriString(_newUrlField, UriKind.Absolute))
+        {
+            Console.WriteLine($"The url: {_newUrlField} is not valid");
+            return;
+        }
+        _urls.Add(_newUrlField);
+        _newUrlField = "";
+    }
+}
