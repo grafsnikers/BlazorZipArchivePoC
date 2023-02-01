@@ -24,26 +24,38 @@ Click the button,to download files enlisted below and add them to zip archive on
                             <tr>
                                 <th scope="col">#</th>
                                 <th scope="col">Url</th>
+                                <th scope="col">Edit</th>
                             </tr>
                             </thead>
                             <tbody>
-                                @foreach ((string? url, int i) in _urls.Select((s,i) => (s,i)))
-                                {
-                                    <tr>
-                                        <th scope="row">@i</th>
-                                        <td><a href="@url">@url</a></td>
-                                    </tr>
-                                }
+                            @for (int i = 0; i < _urls.Count; i++)
+                            {
+                                var url = _urls[i];
                                 <tr>
-                                    <th scope="row">@_urls.Count</th>
-                                    <td><input class="form-control rounded-0" type="text" @bind="_newUrlField" placeholder="url"></td>
+                                    <th scope="row">@i</th>
+                                    <td>
+                                        <a href="@url">@url</a>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-outline-danger" type="button" role="presentation" @onclick="() => DeleteRow(url)">
+                                            Delete
+                                        </button>
+                                    </td>
                                 </tr>
+                            }
+                            <tr>
+                                <th scope="row">@_urls.Count</th>
+                                <td colspan="2" >
+                                    <input class="form-control rounded-0" type="text" @bind="_newUrlField" placeholder="url">
+                                </td>
+                            </tr>
                             </tbody>
                         </table>
                     </div>
 
                     <!-- Add rows button-->
-                    <a class="btn btn-primary rounded-0 btn-block" @onclick="AddNewRow" >Add new row</a>
+                    <a class="btn btn-primary rounded-0 btn-block" @onclick="AddNewRow">Add new row</a>
+                    <a class="btn btn-primary rounded-0 btn-block" @onclick="ClearUrls">Clear</a>
                     <p>* be aware of CORS</p>
                 </div>
             </div>
@@ -97,5 +109,15 @@ Click the button,to download files enlisted below and add them to zip archive on
         }
         _urls.Add(_newUrlField);
         _newUrlField = "";
+    }
+
+    private void ClearUrls()
+    {
+        _urls.Clear();
+    }
+
+    private void DeleteRow(string url)
+    {
+        _urls.Remove(url);
     }
 }
