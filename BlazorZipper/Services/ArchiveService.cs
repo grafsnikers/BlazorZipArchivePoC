@@ -26,22 +26,15 @@ public class ArchiveService : IArchiveService
                     urls
                         .Select(async url =>
                         {
-                            var fileName = Path.GetFileName(url);
-                            fileName = string.IsNullOrWhiteSpace(fileName)
-                                ? Random.Shared.Next().ToString() + ".jpg"
-                                : fileName;
-                            fileName = SanitizedFileName(fileName);
+                            string fileName = GetFileName(url);
 
-                            if (url.Contains("unsplash"))
-                            {
-                                fileName = Random.Shared.Next().ToString() + ".jpg";
-                            }
-                            
                             Console.WriteLine($"Started Downloading {fileName}");
 
                             await using var fileStream = await GetStream(url);
 
-                            return AddFileToArchive(fileName, fileStream, archive);
+                            await AddFileToArchive(fileName, fileStream, archive);
+
+                            Console.WriteLine($"Finished processing {fileName}");
                         }));
             }
 
@@ -50,7 +43,7 @@ public class ArchiveService : IArchiveService
 
         return archiveBytes;
     }
-
+    
     private async Task AddFileToArchive(string fileName,
         Stream fileContentStream,
         ZipArchive archive)
@@ -59,8 +52,6 @@ public class ArchiveService : IArchiveService
         await using var entryStream = entry.Open();
 
         await fileContentStream.CopyToAsync(entryStream);
-
-        Console.WriteLine($"Finished processing {fileName}");
     }
 
     private async Task<Stream> GetStream(string url)
@@ -68,9 +59,26 @@ public class ArchiveService : IArchiveService
         return await _httpClient.GetStreamAsync(new Uri(url));
     }
 
-    
+    private string GetFileName(string url)
+    {
+        var fileName = Path.GetFileName(url);
 
-    public string  SanitizedFileName(string fileName, string replacement = "_")
+        fileName = string.IsNullOrWhiteSpace(fileName)
+            ? Random.Shared.Next().ToString() + ".jpg"
+            : fileName;
+
+        fileName = SanitizedFileName(fileName);
+
+        // Quick fix
+        if (url.Contains("unsplash"))
+        {
+            fileName = Random.Shared.Next().ToString() + ".jpg";
+        }
+
+        return fileName;
+    }
+
+    private string  SanitizedFileName(string fileName, string replacement = "_")
     {
         return _removeInvalidChars.Replace(fileName, replacement);
     }
