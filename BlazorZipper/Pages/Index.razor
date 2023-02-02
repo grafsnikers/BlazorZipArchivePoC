@@ -1,5 +1,6 @@
 ﻿@page "/"
 @using BlazorZipper.Services;
+@implements IDisposable
 @inject IArchiveService ArchiveService;
 @inject IJSRuntime JsRuntime;
 
@@ -10,6 +11,7 @@
 Click the button,to download files enlisted below and add them to zip archive on client side
 <div>
     <button class="btn btn-primary" @onclick="DownloadArchive" disabled="@_downloading">@(_downloading ? "Downloading" : "Download Archive")</button>
+    <button class="btn btn-primary" @onclick="CancelOperation" disabled="@(!_downloading)">Cancel</button>
     <input type="number" @bind="_maxDegreeOfParallelism" min="1"/>
 </div>
 <div class="container py-1">
@@ -36,8 +38,8 @@ Click the button,to download files enlisted below and add them to zip archive on
                                 var url = urlRow.Url;
                                 <tr class="@(urlRow.Status == "Done!" ? "table-success": "")">
                                     <th scope="row">@i</th>
-                                    <td>
-                                        <a href="@url">@url</a>
+                                    <td style="font-size: 0.5rem">
+                                            <a href="@url" data-bs-toggle="tooltip" data-bs-placement="top" title="@url">@url</a>
                                     </td>
                                     <td>
                                         @urlRow.Status
@@ -116,6 +118,8 @@ Click the button,to download files enlisted below and add them to zip archive on
 
     private int _maxDegreeOfParallelism = 5;
 
+    private CancellationTokenSource cts = new ();
+
     private async Task DownloadArchive()
     {
         _downloading = true;
@@ -130,7 +134,7 @@ Click the button,to download files enlisted below and add them to zip archive on
         });
 
 
-        var archiveBytes = await ArchiveService.CreateArchiveAsync(_urls, _maxDegreeOfParallelism);
+        var archiveBytes = await ArchiveService.CreateArchiveAsync(_urls, _maxDegreeOfParallelism, cts.Token);
 
         // Save to file on client side
         using var archiveStream = new MemoryStream(archiveBytes);
@@ -165,5 +169,16 @@ Click the button,to download files enlisted below and add them to zip archive on
     private void DeleteRow(UrlRow urlRow)
     {
         _urls.Remove(urlRow);
+    }
+
+    private void CancelOperation()
+    {
+        cts.Cancel();
+    }
+
+    public void Dispose()
+    {
+        cts.Cancel();
+        cts.Dispose();
     }
 }

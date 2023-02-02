@@ -2,5 +2,5 @@
 
 public interface IArchiveService
 {
-    public Task<byte[]> CreateArchiveAsync(List<UrlRow> urls, int maxDegreeOfParallelism);
+    public Task<byte[]> CreateArchiveAsync(List<UrlRow> urls, int maxDegreeOfParallelism, CancellationToken token);
 }

@@ -16,7 +16,7 @@ public class ArchiveService : IArchiveService
         _httpClient = httpClient;
     }
 
-    public async Task<byte[]> CreateArchiveAsync(List<UrlRow> urls, int maxDegreeOfParallelism)
+    public async Task<byte[]> CreateArchiveAsync(List<UrlRow> urls, int maxDegreeOfParallelism, CancellationToken token)
     {
         byte[] archiveBytes;
 
@@ -33,18 +33,18 @@ public class ArchiveService : IArchiveService
                             Console.WriteLine($"Started Downloading {fileName}");
                             urlRow.Progress.Report("Downloading...");
 
-                            await using var fileStream = await GetStream(urlRow.Url);
+                            await using var fileStream = await GetStream(urlRow.Url, token);
 
                             urlRow.Progress.Report("Compressing...");
 
-                            await AddFileToArchive(fileName, fileStream, archive);
+                            await AddFileToArchive(fileName, fileStream, archive, token);
 
                             Console.WriteLine($"Finished processing {fileName}");
                             urlRow.Progress.Report("Done!");
                         });
 
-                var parallelOptions = new ParallelOptions {MaxDegreeOfParallelism = maxDegreeOfParallelism};
-                await Parallel.ForEachAsync(tasks, parallelOptions, async (task, token) => await task);
+                var parallelOptions = new ParallelOptions {MaxDegreeOfParallelism = maxDegreeOfParallelism, CancellationToken = token};
+                await Parallel.ForEachAsync(tasks, parallelOptions, async (task, cancelToken) => await task);
             }
 
             archiveBytes = memoryStream.ToArray();
@@ -57,17 +57,18 @@ public class ArchiveService : IArchiveService
 
     private async Task AddFileToArchive(string fileName,
         Stream fileContentStream,
-        ZipArchive archive)
+        ZipArchive archive,
+        CancellationToken token)
     {
         var entry = archive.CreateEntry(fileName);
         await using var entryStream = entry.Open();
 
-        await fileContentStream.CopyToAsync(entryStream);
+        await fileContentStream.CopyToAsync(entryStream, token);
     }
 
-    private async Task<Stream> GetStream(string url)
+    private async Task<Stream> GetStream(string url, CancellationToken token)
     {
-        return await _httpClient.GetStreamAsync(new Uri(url));
+        return await _httpClient.GetStreamAsync(new Uri(url), token);
     }
 
     private string GetFileName(string url)
