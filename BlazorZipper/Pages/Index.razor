@@ -24,20 +24,25 @@ Click the button,to download files enlisted below and add them to zip archive on
                             <tr>
                                 <th scope="col">#</th>
                                 <th scope="col">Url</th>
+                                <th scope="col">Status</th>
                                 <th scope="col">Edit</th>
                             </tr>
                             </thead>
                             <tbody>
                             @for (int i = 0; i < _urls.Count; i++)
                             {
-                                var url = _urls[i];
-                                <tr>
+                                var urlRow = _urls[i];
+                                var url = urlRow.Url;
+                                <tr class="@(urlRow.Status == "Done!" ? "table-success": "")">
                                     <th scope="row">@i</th>
                                     <td>
                                         <a href="@url">@url</a>
                                     </td>
                                     <td>
-                                        <button class="btn btn-outline-danger" type="button" role="presentation" @onclick="() => DeleteRow(url)">
+                                        @urlRow.Status
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-outline-danger" type="button" role="presentation" @onclick="() => DeleteRow(urlRow)">
                                             Delete
                                         </button>
                                     </td>
@@ -65,7 +70,7 @@ Click the button,to download files enlisted below and add them to zip archive on
 
 @code
 {
-    private List<string> _urls = new List<string>()
+    private List<UrlRow> _urls = new List<string>()
     {
         "https://images.unsplash.com/photo-1672362020135-32a8ea3f463f?ixlib=rb-4.0.3&dl=taylor-heery-egGgyyaVw7Q-unsplash.jpg",
         "https://images.unsplash.com/photo-1674394006641-b680753c502b?ixlib=rb-4.0.3&dl=heather-wilde-dOZJoIPhriI-unsplash.jpg",
@@ -101,7 +106,8 @@ Click the button,to download files enlisted below and add them to zip archive on
         "https://images.unsplash.com/photo-1623120218365-f12d95301eba?ixlib=rb-4.0.3&dl=robert-ritchie-oWyH0xSweKs-unsplash.jpg",
         "https://images.unsplash.com/photo-1615653051647-321e464edc86?ixlib=rb-4.0.3&dl=yohan-marion-iL6iPs8rE9w-unsplash.jpg",
         "https://images.unsplash.com/photo-1496224303445-89779ef1ed23?ixlib=rb-4.0.3&dl=will-b-UXKNbZjHCyw-unsplash.jpg",
-    };
+    }
+        .Select(x => new UrlRow{Url = x, Status = "None"}).ToList();
 
     private string _newUrlField = "";
 
@@ -111,7 +117,17 @@ Click the button,to download files enlisted below and add them to zip archive on
     {
         _downloading = true;
         
-        var archiveBytes = await ArchiveService.CreateArchiveAsync(_urls.Where(x => !string.IsNullOrWhiteSpace(x)));
+        _urls.ForEach(x =>
+        {
+            x.Progress = new Progress<string>(a =>
+            {
+                x.Status = a;
+                StateHasChanged();
+            });
+        });
+
+
+        var archiveBytes = await ArchiveService.CreateArchiveAsync(_urls);
 
         // Save to file on client side
         using var archiveStream = new MemoryStream(archiveBytes);
@@ -134,7 +150,7 @@ Click the button,to download files enlisted below and add them to zip archive on
             Console.WriteLine($"The url: {_newUrlField} is not valid");
             return;
         }
-        _urls.Add(_newUrlField);
+        _urls.Add(new UrlRow(){Url = _newUrlField, Status = "None"});
         _newUrlField = "";
     }
 
@@ -143,8 +159,8 @@ Click the button,to download files enlisted below and add them to zip archive on
         _urls.Clear();
     }
 
-    private void DeleteRow(string url)
+    private void DeleteRow(UrlRow urlRow)
     {
-        _urls.Remove(url);
+        _urls.Remove(urlRow);
     }
 }

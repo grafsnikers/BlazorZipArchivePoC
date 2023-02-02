@@ -2,5 +2,5 @@
 
 public interface IArchiveService
 {
-    public Task<byte[]> CreateArchiveAsync(IEnumerable<string> urls);
+    public Task<byte[]> CreateArchiveAsync(List<UrlRow> urls);
 }

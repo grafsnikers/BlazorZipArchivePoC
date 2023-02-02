@@ -14,7 +14,7 @@ public class ArchiveService : IArchiveService
         _httpClient = httpClient;
     }
 
-    public async Task<byte[]> CreateArchiveAsync(IEnumerable<string> urls)
+    public async Task<byte[]> CreateArchiveAsync(List<UrlRow> urls)
     {
         byte[] archiveBytes;
 
@@ -24,22 +24,28 @@ public class ArchiveService : IArchiveService
             {
                 await Task.WhenAll(
                     urls
-                        .Select(async url =>
+                        .Select(async urlRow =>
                         {
-                            string fileName = GetFileName(url);
+                            string fileName = GetFileName(urlRow.Url);
 
                             Console.WriteLine($"Started Downloading {fileName}");
+                            urlRow.Progress.Report("Downloading...");
 
-                            await using var fileStream = await GetStream(url);
+                            await using var fileStream = await GetStream(urlRow.Url);
+
+                            urlRow.Progress.Report("Compressing...");
 
                             await AddFileToArchive(fileName, fileStream, archive);
-
+                            
                             Console.WriteLine($"Finished processing {fileName}");
+                            urlRow.Progress.Report("Done!");
                         }));
             }
 
             archiveBytes = memoryStream.ToArray();
         }
+
+        Console.WriteLine("Archive is ready!");
 
         return archiveBytes;
     }
@@ -83,4 +89,11 @@ public class ArchiveService : IArchiveService
         return _removeInvalidChars.Replace(fileName, replacement);
     }
 
+}
+
+public class UrlRow
+{
+    public string Url { get; set; }
+    public string Status { get; set; }
+    public IProgress<string> Progress { get; set; }
 }
