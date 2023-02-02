@@ -5,8 +5,10 @@ namespace BlazorZipper.Services;
 
 public class ArchiveService : IArchiveService
 {
-    private static readonly Regex _removeInvalidChars = new Regex($"[{Regex.Escape(new string(Path.GetInvalidFileNameChars()))}]",
+    private static readonly Regex _removeInvalidChars = new Regex(
+        $"[{Regex.Escape(new string(Path.GetInvalidFileNameChars()))}]",
         RegexOptions.Singleline | RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
     private readonly HttpClient _httpClient;
 
     public ArchiveService(HttpClient httpClient)
@@ -14,7 +16,7 @@ public class ArchiveService : IArchiveService
         _httpClient = httpClient;
     }
 
-    public async Task<byte[]> CreateArchiveAsync(List<UrlRow> urls)
+    public async Task<byte[]> CreateArchiveAsync(List<UrlRow> urls, int maxDegreeOfParallelism)
     {
         byte[] archiveBytes;
 
@@ -22,7 +24,7 @@ public class ArchiveService : IArchiveService
         {
             using (var archive = new ZipArchive(memoryStream, ZipArchiveMode.Create, true))
             {
-                await Task.WhenAll(
+                var tasks =
                     urls
                         .Select(async urlRow =>
                         {
@@ -36,10 +38,13 @@ public class ArchiveService : IArchiveService
                             urlRow.Progress.Report("Compressing...");
 
                             await AddFileToArchive(fileName, fileStream, archive);
-                            
+
                             Console.WriteLine($"Finished processing {fileName}");
                             urlRow.Progress.Report("Done!");
-                        }));
+                        });
+
+                var parallelOptions = new ParallelOptions {MaxDegreeOfParallelism = maxDegreeOfParallelism};
+                await Parallel.ForEachAsync(tasks, parallelOptions, async (task, token) => await task);
             }
 
             archiveBytes = memoryStream.ToArray();
@@ -49,7 +54,7 @@ public class ArchiveService : IArchiveService
 
         return archiveBytes;
     }
-    
+
     private async Task AddFileToArchive(string fileName,
         Stream fileContentStream,
         ZipArchive archive)
@@ -84,11 +89,10 @@ public class ArchiveService : IArchiveService
         return fileName;
     }
 
-    private string  SanitizedFileName(string fileName, string replacement = "_")
+    private string SanitizedFileName(string fileName, string replacement = "_")
     {
         return _removeInvalidChars.Replace(fileName, replacement);
     }
-
 }
 
 public class UrlRow

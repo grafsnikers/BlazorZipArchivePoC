@@ -10,6 +10,7 @@
 Click the button,to download files enlisted below and add them to zip archive on client side
 <div>
     <button class="btn btn-primary" @onclick="DownloadArchive" disabled="@_downloading">@(_downloading ? "Downloading" : "Download Archive")</button>
+    <input type="number" @bind="_maxDegreeOfParallelism" min="1"/>
 </div>
 <div class="container py-1">
     <div class="row">
@@ -113,6 +114,8 @@ Click the button,to download files enlisted below and add them to zip archive on
 
     private bool _downloading = false;
 
+    private int _maxDegreeOfParallelism = 5;
+
     private async Task DownloadArchive()
     {
         _downloading = true;
@@ -127,7 +130,7 @@ Click the button,to download files enlisted below and add them to zip archive on
         });
 
 
-        var archiveBytes = await ArchiveService.CreateArchiveAsync(_urls);
+        var archiveBytes = await ArchiveService.CreateArchiveAsync(_urls, _maxDegreeOfParallelism);
 
         // Save to file on client side
         using var archiveStream = new MemoryStream(archiveBytes);
